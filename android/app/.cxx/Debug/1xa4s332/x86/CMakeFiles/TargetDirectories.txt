@@ -1,0 +1,2 @@
+C:/Users/aman/Desktop/restaurant/android/app/.cxx/Debug/1xa4s332/x86/CMakeFiles/edit_cache.dir
+C:/Users/aman/Desktop/restaurant/android/app/.cxx/Debug/1xa4s332/x86/CMakeFiles/rebuild_cache.dir
