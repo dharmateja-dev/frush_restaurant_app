@@ -116,6 +116,7 @@ class Constant {
 
   static String orderRingtoneUrl = '';
   static bool singleOrderReceive = false;
+  static int driverOrderAcceptRejectDuration = 0;
 
   static String scheduleOrderTime = '0';
   static String scheduleOrderTimeType = 'minute'; // hour and day

@@ -28,6 +28,7 @@ class OrderDetailsController extends GetxController {
   RxDouble subTotal = 0.0.obs;
   RxDouble taxAmount = 0.0.obs;
   RxDouble specialDiscount = 0.0.obs;
+  RxString specialOccasion = "".obs;
 
   getArgument() async {
     dynamic argumentData = Get.arguments;
@@ -53,6 +54,9 @@ class OrderDetailsController extends GetxController {
           orderModel.value.specialDiscount!['special_discount'] != null) {
         specialDiscount.value = double.parse(
             orderModel.value.specialDiscount!['special_discount'].toString());
+      }
+      if (orderModel.value.specialOccasion != null) {
+        specialOccasion.value = orderModel.value.specialOccasion!;
       }
 
       if (orderModel.value.taxSetting != null) {

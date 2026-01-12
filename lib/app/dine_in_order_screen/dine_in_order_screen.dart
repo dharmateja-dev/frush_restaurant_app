@@ -618,6 +618,76 @@ class DineInOrderScreen extends StatelessWidget {
                 const SizedBox(
                   height: 5,
                 ),
+                if (orderModel.occasion != null &&
+                    orderModel.occasion!.toString().isNotEmpty)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Special Occasion".tr,
+                          style: TextStyle(
+                            color: themeChange.getThem()
+                                ? AppThemeData.grey300
+                                : AppThemeData.grey600,
+                            fontFamily: AppThemeData.regular,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          orderModel.occasion!.toString(),
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            fontFamily: AppThemeData.semiBold,
+                            fontSize: 14,
+                            color: themeChange.getThem()
+                                ? AppThemeData.grey100
+                                : AppThemeData.grey800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(
+                  height: 5,
+                ),
+                if (orderModel.specialRequest != null &&
+                    orderModel.specialRequest!.toString().isNotEmpty)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Additional Request".tr,
+                          style: TextStyle(
+                            color: themeChange.getThem()
+                                ? AppThemeData.grey300
+                                : AppThemeData.grey600,
+                            fontFamily: AppThemeData.regular,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          orderModel.specialRequest!.toString(),
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: themeChange.getThem()
+                                ? AppThemeData.grey50
+                                : AppThemeData.grey900,
+                            fontFamily: AppThemeData.semiBold,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(
+                  height: 5,
+                ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -668,7 +738,7 @@ class DineInOrderScreen extends StatelessWidget {
                                 orderModel.status = Constant.orderRejected;
                                 await FireStoreUtils.setBookedOrder(orderModel);
                                 SendNotification.sendFcmMessage(
-                                    Constant.dineInAccepted,
+                                    Constant.dineInCanceled,
                                     orderModel.author!.fcmToken.toString(), {});
                                 controller.getDineBooking();
                                 ShowToastDialog.closeLoader();

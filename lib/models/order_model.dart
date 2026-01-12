@@ -36,36 +36,40 @@ class OrderModel {
 
   OrderModel(
       {this.address,
-        this.status,
-        this.couponId,
-        this.vendorID,
-        this.driverID,
-        this.discount,
-        this.authorID,
-        this.estimatedTimeToPrepare,
-        this.createdAt,
-        this.triggerDelivery,
-        this.taxSetting,
-        this.paymentMethod,
-        this.products,
-        this.adminCommissionType,
-        this.vendor,
-        this.id,
-        this.adminCommission,
-        this.couponCode,
-        this.specialDiscount,
-        this.deliveryCharge,
-        this.scheduleTime,
-        this.tipAmount,
-        this.notes,
-        this.author,
-        this.driver,
-        this.takeAway,this.rejectedByDrivers});
+      this.status,
+      this.specialOccasion,
+      this.couponId,
+      this.vendorID,
+      this.driverID,
+      this.discount,
+      this.authorID,
+      this.estimatedTimeToPrepare,
+      this.createdAt,
+      this.triggerDelivery,
+      this.taxSetting,
+      this.paymentMethod,
+      this.products,
+      this.adminCommissionType,
+      this.vendor,
+      this.id,
+      this.adminCommission,
+      this.couponCode,
+      this.specialDiscount,
+      this.deliveryCharge,
+      this.scheduleTime,
+      this.tipAmount,
+      this.notes,
+      this.author,
+      this.driver,
+      this.takeAway,
+      this.rejectedByDrivers});
 
   OrderModel.fromJson(Map<String, dynamic> json) {
-    address = json['address'] != null ? ShippingAddress.fromJson(json['address']) : null;
+    address = json['address'] != null
+        ? ShippingAddress.fromJson(json['address'])
+        : null;
     status = json['status'];
-    specialOccasion = json['special_occasion'];
+    specialOccasion = json['special_occasion'] ?? json['occasion'];
     couponId = json['couponId'];
     vendorID = json['vendorID'];
     driverID = json['driverID'];
@@ -88,14 +92,19 @@ class OrderModel {
       });
     }
     adminCommissionType = json['adminCommissionType'];
-    vendor = json['vendor'] != null ? VendorModel.fromJson(json['vendor']) : null;
+    vendor =
+        json['vendor'] != null ? VendorModel.fromJson(json['vendor']) : null;
     id = json['id'];
     adminCommission = json['adminCommission'];
     couponCode = json['couponCode'];
     specialDiscount = json['specialDiscount'];
-    deliveryCharge = json['deliveryCharge'].toString().isEmpty ? "0.0" : json['deliveryCharge'] ?? '0.0';
+    deliveryCharge = json['deliveryCharge'].toString().isEmpty
+        ? "0.0"
+        : json['deliveryCharge'] ?? '0.0';
     scheduleTime = json['scheduleTime'];
-    tipAmount = json['tip_amount'].toString().isEmpty ? "0.0" : json['tip_amount'] ?? "0.0";
+    tipAmount = json['tip_amount'].toString().isEmpty
+        ? "0.0"
+        : json['tip_amount'] ?? "0.0";
     notes = json['notes'];
     author = json['author'] != null ? UserModel.fromJson(json['author']) : null;
     driver = json['driver'] != null ? UserModel.fromJson(json['driver']) : null;
@@ -109,7 +118,7 @@ class OrderModel {
       data['address'] = address!.toJson();
     }
     data['status'] = status;
-    data['special_occasion'] = specialOccasion;
+    data['occasion'] = specialOccasion;
     data['couponId'] = couponId;
     data['vendorID'] = vendorID;
     data['driverID'] = driverID;

@@ -36,6 +36,8 @@ class CollectionName {
   static const String subscriptionPlans = "subscription_plans";
   static const String subscriptionHistory = "subscription_history";
   static const String advertisements = "advertisements";
+  static const String driverReview = "driver_review";
+  static const String customerReview = "customer_review";
 }
 /*******************************************************************************************
 * Copyright (c) 2025 Movenetics Digital. All rights reserved.

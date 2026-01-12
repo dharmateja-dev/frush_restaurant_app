@@ -219,6 +219,23 @@ class FireStoreUtils {
     return isAdded;
   }
 
+  static Future<OrderModel?> getOrderById(String orderId) async {
+    try {
+      DocumentSnapshot doc = await fireStore
+          .collection(CollectionName.restaurantOrders)
+          .doc(orderId)
+          .get();
+
+      if (doc.exists) {
+        return OrderModel.fromJson(doc.data() as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Error fetching order: $e");
+      return null;
+    }
+  }
+
   getSettings() async {
     try {
       await FirebaseFirestore.instance
@@ -371,6 +388,8 @@ class FireStoreUtils {
         if (event.exists) {
           Constant.selectedMapType = event.data()!["selectedMapType"];
           Constant.singleOrderReceive = event.data()!['singleOrderReceive'];
+          Constant.driverOrderAcceptRejectDuration =
+              event.data()!['driverOrderAcceptRejectDuration'];
         }
       });
 
@@ -1898,7 +1917,7 @@ class FireStoreUtils {
     return driverList;
   }
 
-   static Future<List<UserModel>> getAvalibleDriversFromDriver() async {
+  static Future<List<UserModel>> getAvalibleDriversFromDriver() async {
     List<UserModel> driverListFromDriver = [];
     try {
       log("getAvalibleDrivers :: 24");
@@ -1923,7 +1942,6 @@ class FireStoreUtils {
     return driverListFromDriver;
   }
 
-
   static Future<List<UserModel>> getAllDrivers() async {
     List<UserModel> driverList = [];
     try {
@@ -1944,6 +1962,191 @@ class FireStoreUtils {
       log("Error fetching drivers: ${e.toString()}");
     }
     return driverList;
+  }
+
+  // ==================== DRIVER RATING FUNCTIONS ====================
+
+  /// Save or update a driver rating
+  static Future<bool> saveDriverRating(RatingModel ratingModel) async {
+    bool isSuccess = false;
+    try {
+      await fireStore
+          .collection(CollectionName.driverReview)
+          .doc(ratingModel.id)
+          .set(ratingModel.toJson())
+          .whenComplete(() {
+        isSuccess = true;
+      }).catchError((error) {
+        log("Failed to save driver rating: $error");
+        isSuccess = false;
+      });
+    } catch (e) {
+      log("Error saving driver rating: ${e.toString()}");
+      isSuccess = false;
+    }
+    return isSuccess;
+  }
+
+  /// Get driver rating by order ID and driver ID
+  static Future<RatingModel?> getDriverRatingByOrderId(
+      String orderId, String driverId) async {
+    RatingModel? ratingModel;
+    try {
+      await fireStore
+          .collection(CollectionName.driverReview)
+          .where('orderid', isEqualTo: orderId)
+          .where('driverId', isEqualTo: driverId)
+          .get()
+          .then((value) {
+        if (value.docs.isNotEmpty) {
+          ratingModel = RatingModel.fromJson(value.docs.first.data());
+        }
+      }).catchError((error) {
+        log("Error getting driver rating: ${error.toString()}");
+      });
+    } catch (e) {
+      log("Error getting driver rating: ${e.toString()}");
+    }
+    return ratingModel;
+  }
+
+  /// Get all ratings for a driver
+  static Future<List<RatingModel>> getDriverRatings(String driverId) async {
+    List<RatingModel> ratingsList = [];
+    try {
+      await fireStore
+          .collection(CollectionName.driverReview)
+          .where('driverId', isEqualTo: driverId)
+          .orderBy('createdAt', descending: true)
+          .get()
+          .then((value) {
+        if (value.docs.isNotEmpty) {
+          for (var doc in value.docs) {
+            ratingsList.add(RatingModel.fromJson(doc.data()));
+          }
+        }
+      }).catchError((error) {
+        log("Error getting driver ratings: ${error.toString()}");
+      });
+    } catch (e) {
+      log("Error getting driver ratings: ${e.toString()}");
+    }
+    return ratingsList;
+  }
+
+  /// Update driver's average rating in user document
+  static Future<void> updateDriverAverageRating(String driverId) async {
+    try {
+      List<RatingModel> ratings = await getDriverRatings(driverId);
+      if (ratings.isNotEmpty) {
+        double totalRating = 0.0;
+        for (var rating in ratings) {
+          totalRating += rating.rating ?? 0.0;
+        }
+        double averageRating = totalRating / ratings.length;
+
+        await fireStore.collection(CollectionName.users).doc(driverId).update({
+          'driverRating': double.parse(averageRating.toStringAsFixed(1)),
+          'totalRatings': ratings.length,
+        });
+      }
+    } catch (e) {
+      log("Error updating driver average rating: ${e.toString()}");
+    }
+  }
+
+  // ==================== CUSTOMER RATING FUNCTIONS ====================
+
+  /// Save or update a customer rating
+  static Future<bool> saveCustomerRating(RatingModel ratingModel) async {
+    bool isSuccess = false;
+    try {
+      await fireStore
+          .collection(CollectionName.customerReview)
+          .doc(ratingModel.id)
+          .set(ratingModel.toJson())
+          .whenComplete(() {
+        isSuccess = true;
+      }).catchError((error) {
+        log("Failed to save customer rating: $error");
+        isSuccess = false;
+      });
+    } catch (e) {
+      log("Error saving customer rating: ${e.toString()}");
+      isSuccess = false;
+    }
+    return isSuccess;
+  }
+
+  /// Get customer rating by order ID and customer ID
+  static Future<RatingModel?> getCustomerRatingByOrderId(
+      String orderId, String customerId) async {
+    RatingModel? ratingModel;
+    try {
+      await fireStore
+          .collection(CollectionName.customerReview)
+          .where('orderid', isEqualTo: orderId)
+          .where('CustomerId', isEqualTo: customerId)
+          .get()
+          .then((value) {
+        if (value.docs.isNotEmpty) {
+          ratingModel = RatingModel.fromJson(value.docs.first.data());
+        }
+      }).catchError((error) {
+        log("Error getting customer rating: ${error.toString()}");
+      });
+    } catch (e) {
+      log("Error getting customer rating: ${e.toString()}");
+    }
+    return ratingModel;
+  }
+
+  /// Get all ratings for a customer
+  static Future<List<RatingModel>> getCustomerRatings(String customerId) async {
+    List<RatingModel> ratingsList = [];
+    try {
+      await fireStore
+          .collection(CollectionName.customerReview)
+          .where('CustomerId', isEqualTo: customerId)
+          .orderBy('createdAt', descending: true)
+          .get()
+          .then((value) {
+        if (value.docs.isNotEmpty) {
+          for (var doc in value.docs) {
+            ratingsList.add(RatingModel.fromJson(doc.data()));
+          }
+        }
+      }).catchError((error) {
+        log("Error getting customer ratings: ${error.toString()}");
+      });
+    } catch (e) {
+      log("Error getting customer ratings: ${e.toString()}");
+    }
+    return ratingsList;
+  }
+
+  /// Update customer's average rating in user document
+  static Future<void> updateCustomerAverageRating(String customerId) async {
+    try {
+      List<RatingModel> ratings = await getCustomerRatings(customerId);
+      if (ratings.isNotEmpty) {
+        double totalRating = 0.0;
+        for (var rating in ratings) {
+          totalRating += rating.rating ?? 0.0;
+        }
+        double averageRating = totalRating / ratings.length;
+
+        await fireStore
+            .collection(CollectionName.users)
+            .doc(customerId)
+            .update({
+          'customerRating': double.parse(averageRating.toStringAsFixed(1)),
+          'totalRatings': ratings.length,
+        });
+      }
+    } catch (e) {
+      log("Error updating customer average rating: ${e.toString()}");
+    }
   }
 }
 /*******************************************************************************************

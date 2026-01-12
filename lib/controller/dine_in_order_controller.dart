@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:restaurant/constant/constant.dart';
 import 'package:restaurant/models/dine_in_booking_model.dart';
+import 'package:restaurant/models/order_model.dart';
 import 'package:restaurant/models/user_model.dart';
 import 'package:restaurant/models/vendor_model.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
@@ -8,6 +9,8 @@ import 'package:restaurant/utils/fire_store_utils.dart';
 class DineInOrderController extends GetxController {
   RxBool isLoading = true.obs;
   RxInt selectedTabIndex = 0.obs;
+
+  Rx<OrderModel> orderModel = OrderModel().obs;
 
   @override
   void onInit() {

@@ -40,7 +40,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final themeChange = Provider.of<DarkThemeProvider>(context);
     return GetX(
         init: HomeController(),
@@ -1645,6 +1644,49 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                // NEW: Display estimated arrival time when driver has accepted
+                Visibility(
+                  visible: orderModel.status == "Driver Accepted" &&
+                      controller.estimatedArrivalTimes
+                          .containsKey(orderModel.id),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: themeChange.getThem()
+                            ? AppThemeData.warning300.withOpacity(0.1)
+                            : AppThemeData.warning300.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppThemeData.warning300.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 18,
+                            color: AppThemeData.warning300,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Driver ETA to restaurant: ${controller.getEstimatedArrivalTimeText(orderModel.id ?? '')}"
+                                .tr,
+                            style: TextStyle(
+                              color: AppThemeData.warning300,
+                              fontSize: 14,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Row(
@@ -1805,7 +1847,6 @@ class HomeScreen extends StatelessWidget {
                                 ? RoundedButtonFill(
                                     title: "Reassign Driver".tr,
                                     color: AppThemeData.warning300,
-                                    // Use warning color for reassignment
                                     textColor: AppThemeData.grey50,
                                     height: 5,
                                     onPress: () async {
@@ -1818,9 +1859,8 @@ class HomeScreen extends StatelessWidget {
                                     color: orderModel.status ==
                                             Constant.driverPending
                                         ? AppThemeData.warning300
-                                        : orderModel.status ==
-                                                Constant.driverAccepted
-                                            ? AppThemeData.success300
+                                        : orderModel.status == "Driver Accepted"
+                                            ? AppThemeData.primary300
                                             : AppThemeData.secondary300,
                                     textColor: AppThemeData.grey50,
                                     height: 5,
@@ -2414,6 +2454,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget paymentTypeChip(OrderModel order) {
     final bool isCod = order.paymentMethod != null &&
         (order.paymentMethod!.toLowerCase() == 'cod' ||
@@ -2435,6 +2476,8 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Replace your existing showListOfDeliverymenDialogDriver function with this:
 
   showListOfDeliverymenDialogDriver(
       HomeController controller, themeChange, OrderModel orderModel) {
@@ -2487,187 +2530,15 @@ class HomeScreen extends StatelessWidget {
                           color: AppThemeData.secondary300,
                           textColor: AppThemeData.grey50,
                           onPress: () async {
-                            List<UserModel> availableDrivers = controller
-                                .driverUserListFromDriver
-                                .where((driver) =>
-                                    driver.inProgressOrderID?.isEmpty ?? true)
-                                .toList();
+                            Get.back();
+                            ShowToastDialog.showLoader('Please wait...'.tr);
 
-                            if (availableDrivers.isNotEmpty) {
-                              // Get restaurant/pickup location from orderModel
-                              String pickupLat =
-                                  orderModel.vendor?.latitude?.toString() ??
-                                      "0.0";
-                              String pickupLng =
-                                  orderModel.vendor?.longitude?.toString() ??
-                                      "0.0";
+                            // Reset tried drivers list for new assignment
+                            controller.triedDriverIds.clear();
 
-                              // Initialize selectedDriver
-                              UserModel selectedDriver;
-
-                              if (pickupLat != "0.0" && pickupLng != "0.0") {
-                                // Create a list to store drivers with their distances
-                                List<Map<String, dynamic>> driversWithDistance =
-                                    [];
-
-                                // Calculate distance for each driver
-                                for (UserModel driver in availableDrivers) {
-                                  String driverLat =
-                                      driver.location?.latitude?.toString() ??
-                                          "0.0";
-                                  String driverLng =
-                                      driver.location?.longitude?.toString() ??
-                                          "0.0";
-
-                                  if (driverLat != "0.0" &&
-                                      driverLng != "0.0") {
-                                    String distanceStr = Constant.getDistance(
-                                      lat1: pickupLat,
-                                      lng1: pickupLng,
-                                      lat2: driverLat,
-                                      lng2: driverLng,
-                                    );
-
-                                    double distance = double.parse(distanceStr);
-                                    driversWithDistance.add({
-                                      'driver': driver,
-                                      'distance': distance
-                                    });
-                                  }
-                                }
-
-                                if (driversWithDistance.isNotEmpty) {
-                                  // Sort by distance (closest first)
-                                  driversWithDistance.sort((a, b) =>
-                                      a['distance'].compareTo(b['distance']));
-
-                                  // Find the minimum distance
-                                  double minDistance =
-                                      driversWithDistance.first['distance'];
-
-                                  // Get all drivers within a small range of the closest (e.g., within 0.5 km/miles of closest)
-                                  double tolerance =
-                                      0.5; // Adjust this value as needed
-                                  List<UserModel> closestDrivers =
-                                      driversWithDistance
-                                          .where((item) =>
-                                              item['distance'] <=
-                                              minDistance + tolerance)
-                                          .map<UserModel>(
-                                              (item) => item['driver'])
-                                          .toList();
-
-                                  // Randomly select from the closest drivers
-                                  closestDrivers.shuffle();
-                                  selectedDriver = closestDrivers.first;
-
-                                  // DEBUG: Show selection info
-                                  debugPrint(
-                                      "=== CLOSEST DRIVERS RANDOM ASSIGNMENT ===");
-                                  debugPrint(
-                                      "Total available drivers: ${availableDrivers.length}");
-                                  debugPrint(
-                                      "Drivers within ${tolerance} ${Constant.distanceType} of closest: ${closestDrivers.length}");
-                                  debugPrint(
-                                      "Closest distance: ${minDistance.toStringAsFixed(2)} ${Constant.distanceType}");
-                                  debugPrint(
-                                      "Selected driver: ${selectedDriver.fullName}");
-
-                                  String selectedDistance =
-                                      Constant.getDistance(
-                                    lat1: pickupLat,
-                                    lng1: pickupLng,
-                                    lat2: selectedDriver.location?.latitude
-                                            ?.toString() ??
-                                        "0.0",
-                                    lng2: selectedDriver.location?.longitude
-                                            ?.toString() ??
-                                        "0.0",
-                                  );
-                                  debugPrint(
-                                      "Selected driver distance: $selectedDistance ${Constant.distanceType}");
-                                  debugPrint(
-                                      "=======================================");
-                                } else {
-                                  // Fallback to random if no location data
-                                  availableDrivers.shuffle();
-                                  selectedDriver = availableDrivers.first;
-                                  debugPrint(
-                                      "Selected Driver (Random - no location data): ${selectedDriver.fullName}");
-                                }
-                              } else {
-                                // Fallback to random if no pickup location
-                                availableDrivers.shuffle();
-                                selectedDriver = availableDrivers.first;
-                                debugPrint(
-                                    "Selected Driver (Random - no pickup location): ${selectedDriver.fullName}");
-                              }
-
-                              // Update observable
-                              controller.selectDriverUserFromDriver.value =
-                                  selectedDriver;
-
-                              // Update UI
-                              Get.back();
-
-                              ShowToastDialog.showLoader('Please wait...'.tr);
-                              await AudioPlayerService.playSound(false);
-
-                              // Handle subscription deduction
-                              if ((Constant.isSubscriptionModelApplied ==
-                                          true ||
-                                      Constant.adminCommission?.isEnabled ==
-                                          true) &&
-                                  controller
-                                          .vendermodel.value.subscriptionPlan !=
-                                      null) {
-                                if (controller.vendermodel.value
-                                            .subscriptionTotalOrders !=
-                                        '-1' &&
-                                    controller.vendermodel.value
-                                            .subscriptionTotalOrders !=
-                                        null) {
-                                  controller.vendermodel.value
-                                      .subscriptionTotalOrders = (int.parse(
-                                              controller.vendermodel.value
-                                                  .subscriptionTotalOrders!) -
-                                          1)
-                                      .toString();
-                                  await FireStoreUtils.updateVendor(
-                                      controller.vendermodel.value);
-                                }
-                              }
-
-                              // Update order and driver info
-                              orderModel.notes = "";
-                              orderModel.driverID = selectedDriver.id;
-                              orderModel.driver = selectedDriver;
-                              orderModel.status = Constant.driverPending;
-
-                              selectedDriver.inProgressOrderID ??= [];
-                              selectedDriver.inProgressOrderID!
-                                  .add(orderModel.id);
-
-                              // Save to Firebase
-                              await FireStoreUtils.updateOrder(orderModel);
-                              await FireStoreUtils.updateDriverUser(
-                                  selectedDriver);
-                              await FireStoreUtils.restaurantVendorWalletSet(
-                                  orderModel);
-
-                              // Notifications
-                              await AudioPlayerService.playSound(false);
-                              SendNotification.sendFcmMessage(
-                                  Constant.driverAccepted,
-                                  orderModel.author!.fcmToken ?? '', {});
-                              SendNotification.sendFcmMessage(
-                                  Constant.newDeliveryOrder,
-                                  selectedDriver.fcmToken ?? '', {});
-                              ShowToastDialog.closeLoader();
-                            } else {
-                              ShowToastDialog.showToast(
-                                  "No available delivery man found.".tr);
-                            }
+                            // Start the auto-reassignment process
+                            await controller
+                                .assignDriverWithAutoReassignment(orderModel);
                           },
                         ),
                       ),
