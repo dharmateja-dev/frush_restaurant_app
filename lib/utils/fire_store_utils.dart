@@ -170,6 +170,43 @@ class FireStoreUtils {
     return isUpdate;
   }
 
+  /// Check if a phone number already exists for any driver under the same vendor
+  /// Returns the existing driver's UserModel if found, null otherwise
+  /// [phoneNumber] - The phone number to check
+  /// [vendorId] - The vendor ID to check under
+  /// [excludeDriverId] - Optional driver ID to exclude from the check (for edit mode)
+  static Future<UserModel?> checkDriverPhoneNumberExists({
+    required String phoneNumber,
+    required String vendorId,
+    String? excludeDriverId,
+  }) async {
+    try {
+      QuerySnapshot querySnapshot = await fireStore
+          .collection(CollectionName.users)
+          .where('phoneNumber', isEqualTo: phoneNumber)
+          .where('vendorID', isEqualTo: vendorId)
+          .where('role', isEqualTo: Constant.userRoleDriver)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        for (var doc in querySnapshot.docs) {
+          UserModel existingDriver =
+              UserModel.fromJson(doc.data() as Map<String, dynamic>);
+          // If we're editing and this is the same driver, skip
+          if (excludeDriverId != null && existingDriver.id == excludeDriverId) {
+            continue;
+          }
+          // Found a driver with the same phone number
+          return existingDriver;
+        }
+      }
+      return null;
+    } catch (e) {
+      log("Error checking driver phone number: $e");
+      return null;
+    }
+  }
+
   static Future<bool> withdrawWalletAmount(WithdrawalModel userModel) async {
     bool isUpdate = false;
     await fireStore

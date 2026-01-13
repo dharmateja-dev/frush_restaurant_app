@@ -79,6 +79,28 @@ class AddDriverController extends GetxController {
     ShowToastDialog.showLoader("Please wait".tr);
 
     try {
+      String phoneNumber = phoneNUmberEditingController.value.text.trim();
+      String? vendorId = Constant.userModel?.vendorID;
+
+      // Check if phone number already exists for another driver under the same vendor
+      if (vendorId != null && phoneNumber.isNotEmpty) {
+        UserModel? existingDriver =
+            await FireStoreUtils.checkDriverPhoneNumberExists(
+          phoneNumber: phoneNumber,
+          vendorId: vendorId,
+          excludeDriverId:
+              driverModel.value.id, // Exclude current driver in edit mode
+        );
+
+        if (existingDriver != null) {
+          ShowToastDialog.closeLoader();
+          ShowToastDialog.showToast(
+              "This phone number is already assigned to another delivery man (${existingDriver.fullName()}). Please use a different phone number."
+                  .tr);
+          return;
+        }
+      }
+
       if (driverModel.value.id != null && driverModel.value.id != '') {
         log(":::::111:::::::");
         driverModel.value.firstName =
